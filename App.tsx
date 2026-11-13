@@ -6,6 +6,8 @@ import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+import { getCategory } from './src/categories';
+import { CategoryBar } from './src/CategoryBar';
 import { SwipeDeck, type SwipeDeckHandle } from './src/SwipeDeck';
 import { TrashReview } from './src/TrashReview';
 import { colors } from './src/theme';
@@ -104,6 +106,8 @@ function Sorter({ limited }: { limited: boolean }) {
         </Pressable>
       )}
 
+      <CategoryBar active={q.category} counts={q.counts} onSelect={q.setCategory} />
+
       {/* Deck */}
       {showInitialSpinner ? (
         <View style={styles.fill}>
@@ -114,11 +118,15 @@ function Sorter({ limited }: { limited: boolean }) {
       ) : (
         <View style={styles.fill}>
           <Ionicons name="sparkles-outline" size={56} color={colors.keep} />
-          <Text style={styles.h1}>All caught up</Text>
+          <Text style={styles.h1}>
+            {q.category === 'all' ? 'All caught up' : `No more ${getCategory(q.category).label.toLowerCase()}`}
+          </Text>
           <Text style={styles.body}>
             {q.trash.length > 0
               ? `${q.trash.length} photo${q.trash.length === 1 ? ' is' : 's are'} waiting to be deleted.`
-              : 'Every photo has been reviewed.'}
+              : q.category === 'all'
+                ? 'Every photo has been reviewed.'
+                : 'Pick another category above, or switch to All.'}
           </Text>
           {q.trash.length > 0 && (
             <PrimaryButton label="Review & delete" color={colors.delete} onPress={() => setTrashOpen(true)} />

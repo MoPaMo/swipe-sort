@@ -36,6 +36,7 @@ The server stays up for about 5.5 hours, or until you cancel the run. Metro and 
 | Swipe left / ✕ | Adds the photo to the trash queue. |
 | ↺ | Undoes the last decision (up to 50 back). |
 | Trash icon | Shows queued photos. Tap one to restore it, or delete them all at once. |
+| Category bar | Filters to All, Screenshots, Live Photos, Portraits, Panoramas or Favorites, with a count of photos left to review in each. Android only has All, Screenshots and Favorites. |
 | Options icon | Switches between newest and oldest first, or makes kept photos show up again. |
 
 - **Batch delete:** everything in the trash goes to the system in one call, so you get one confirmation prompt instead of one per photo. On iOS the photos land in *Recently Deleted* for 30 days. On Android they're deleted permanently.

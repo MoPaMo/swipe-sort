@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import type { CategoryId } from './categories';
 import type { Photo } from './types';
 
 const KEPT_KEY = 'swipesort:kept:v1';
 const TRASH_KEY = 'swipesort:trash:v1';
 const ORDER_KEY = 'swipesort:order:v1';
+const CATEGORY_KEY = 'swipesort:category:v1';
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -28,4 +30,7 @@ export const storage = {
 
   loadOrder: () => readJson<'newest' | 'oldest'>(ORDER_KEY, 'newest'),
   saveOrder: (order: 'newest' | 'oldest') => writeJson(ORDER_KEY, order),
+
+  loadCategory: () => readJson<CategoryId>(CATEGORY_KEY, 'all'),
+  saveCategory: (c: CategoryId) => writeJson(CATEGORY_KEY, c),
 };
