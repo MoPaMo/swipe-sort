@@ -49,36 +49,39 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           # Expo skips registering the dev session (the Expo Go "Development servers" list) when CI is set.
           CI: 'false'
-          NO_COLOR: '1'
           FORCE_COLOR: '0'
         run: |
-          npx expo start --tunnel > expo.log 2>&1 &
-          PID=$!
+          nohup npx expo start --tunnel > expo.log 2>&1 &
+          echo $! > expo.pid
 
           URL=""
           for i in $(seq 1 180); do
-            URL=$(sed 's/\x1b\[[0-9;]*m//g' expo.log | grep -oE 'exp://[^ ]+' | head -1 || true)
+            URL=$(grep -oE 'Waiting on https?://[^ ]+' expo.log | head -1 | sed 's/^Waiting on //' || true)
             [ -n "$URL" ] && break
-            if ! kill -0 $PID 2>/dev/null; then cat expo.log; echo "::error::Expo exited early"; exit 1; fi
+            if ! kill -0 "$(cat expo.pid)" 2>/dev/null; then cat expo.log; echo "::error::Expo exited early"; exit 1; fi
             sleep 2
           done
           cat expo.log
-
           if [ -z "$URL" ]; then echo "::error::No tunnel URL after 6 minutes"; exit 1; fi
+
+          # Expo Go wants exp:// (http) or exps:// (https) — same host.
+          GO_URL=$(echo "$URL" | sed -E 's#^https://#exps://#; s#^http://#exp://#')
 
           {
             echo "## 📱 Open in Expo Go"
             echo
-            echo "1. Open **Expo Go**, signed in to the same Expo account as the token."
-            echo "2. Tap the project under **Development servers**."
-            echo
-            echo "If it isn't listed, copy this into Expo Go → *Enter URL manually*:"
+            echo "1. Open **Expo Go**, signed in to the same Expo account as the token, and tap the project under **Development servers**."
+            echo "2. If it isn't listed, copy this into Expo Go → *Enter URL manually*:"
             echo
             echo '```'
-            echo "$URL"
+            echo "$GO_URL"
             echo '```'
+            echo
+            echo "Or try opening $URL in Safari."
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "::notice title=Expo Go URL::$URL"
+          echo "::notice title=Expo Go URL::$GO_URL"
 
-          # Keep the server alive and stream Metro / console logs into this job's output.
-          tail --pid=$PID -n 0 -f expo.log
+      - name: Keep server running (Metro logs below)
+        run: |
+          # Server lives ~5.5 h (job timeout) or until you cancel the run.
+          tail --pid="$(cat expo.pid)" -n +1 -f expo.log
