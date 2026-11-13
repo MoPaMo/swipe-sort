@@ -1,0 +1,84 @@
+# Runs the Expo dev server on a GitHub runner and exposes it through Expo's tunnel,
+# so the app can be opened in Expo Go on a phone — no laptop needed.
+#
+# Setup (once): add a repository secret EXPO_TOKEN
+#   expo.dev → Account settings → Access tokens → Create
+#   GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+#
+# Use: Actions → "Expo Go dev server" → Run workflow. Then open Expo Go (signed in to the
+# same Expo account) and the project shows up under "Development servers".
+# The server stays up for ~5.5 h or until you cancel the run. A new push restarts it.
+
+name: Expo Go dev server
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: expo-dev-server
+  cancel-in-progress: true
+
+jobs:
+  serve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Check for EXPO_TOKEN
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Add an EXPO_TOKEN repository secret (Settings → Secrets and variables → Actions), then re-run."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start dev server with tunnel
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # Expo skips registering the dev session (the Expo Go "Development servers" list) when CI is set.
+          CI: 'false'
+          NO_COLOR: '1'
+          FORCE_COLOR: '0'
+        run: |
+          npx expo start --tunnel > expo.log 2>&1 &
+          PID=$!
+
+          URL=""
+          for i in $(seq 1 180); do
+            URL=$(sed 's/\x1b\[[0-9;]*m//g' expo.log | grep -oE 'exp://[^ ]+' | head -1 || true)
+            [ -n "$URL" ] && break
+            if ! kill -0 $PID 2>/dev/null; then cat expo.log; echo "::error::Expo exited early"; exit 1; fi
+            sleep 2
+          done
+          cat expo.log
+
+          if [ -z "$URL" ]; then echo "::error::No tunnel URL after 6 minutes"; exit 1; fi
+
+          {
+            echo "## 📱 Open in Expo Go"
+            echo
+            echo "1. Open **Expo Go**, signed in to the same Expo account as the token."
+            echo "2. Tap the project under **Development servers**."
+            echo
+            echo "If it isn't listed, copy this into Expo Go → *Enter URL manually*:"
+            echo
+            echo '```'
+            echo "$URL"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Expo Go URL::$URL"
+
+          # Keep the server alive and stream Metro / console logs into this job's output.
+          tail --pid=$PID -n 0 -f expo.log

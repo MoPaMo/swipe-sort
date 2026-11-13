@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "swipe-sort",
+    "name": "SwipeSort",
     "slug": "swipe-sort",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "me.mockenhaupt.swipesort"
     },
     "android": {
       "adaptiveIcon": {
@@ -16,10 +17,25 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "me.mockenhaupt.swipesort"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-image",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "SwipeSort needs access to your photos so you can sort through them.",
+          "savePhotosPermission": false,
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ]
+    ],
+    "backgroundColor": "#0B0B0F"
   }
 }
